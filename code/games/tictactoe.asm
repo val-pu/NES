@@ -124,14 +124,14 @@ ClearNametable:
     ;LDA #$28
     ;STA $2007
     
-    LDX #10 ; Anzahl Reihen
+    LDX #10 ; number of rows
     LDA #$00 
-    LDY #$00 ; Index in GridData
+    LDY #$00 ; index in GridData
 PrintGrid:
-    ; Sichere Index der äußeren Schleife
+    ; save index of outer loop
     TXA
     PHA
-    LDX #10 ; Spaltenindex 10-X
+    LDX #10 ; row index 10-X
 
 PrintRow:
     LDA GridData, Y
@@ -140,7 +140,8 @@ PrintRow:
     DEX
     BNE PrintRow
 
-    ; Überspringe nächste 22 Tiles um neue Zeile zu beginnen (Feld=10 Tiles Breite. Screen=32 und 32-10=22) 
+    ; skip next 22 tiles to start a new row
+    ; (grid=10 tiles wide. screen=32 and 32-10=22) 
     LDX #22
     LDA #0
 BlankRemainingRow:    
@@ -152,8 +153,6 @@ BlankRemainingRow:
     TAX
     DEX
     BNE PrintGrid
-
-
 
     LDA #0
     STA $2005 ; X position (this also sets the w register)
@@ -204,7 +203,7 @@ drawCharacter:
 
     ; Calculate Byte index für Row X. It is (X-1)
     LDA STATE, X
-    LDX $3
+    LDX #$03
     TAY
 DrawCharsRow:
     TYA
