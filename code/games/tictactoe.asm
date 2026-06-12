@@ -114,45 +114,10 @@ ClearNametable:
     CPY #$08
     BNE ClearNametable
     
-; Enable interrupts
+    ; Enable interrupts
     CLI
 
-    LDA #$21
-    STA $2006
-    LDA #$4B
-    STA $2006
-    ;LDA #$28
-    ;STA $2007
-    
-    LDX #10 ; number of rows
-    LDA #$00 
-    LDY #$00 ; index in GridData
-PrintGrid:
-    ; save index of outer loop
-    TXA
-    PHA
-    LDX #10 ; row index 10-X
-
-PrintRow:
-    LDA GridData, Y
-    STA $2007
-    INY
-    DEX
-    BNE PrintRow
-
-    ; skip next 22 tiles to start a new row
-    ; (grid=10 tiles wide. screen=32 and 32-10=22) 
-    LDX #22
-    LDA #0
-BlankRemainingRow:    
-    STA $2007
-    DEX
-    BNE BlankRemainingRow
-    
-    PLA
-    TAX
-    DEX
-    BNE PrintGrid
+    JSR drawGrid
 
     LDA #0
     STA $2005 ; X position (this also sets the w register)
@@ -178,64 +143,11 @@ BlankRemainingRow:
 Loop:
     JMP Loop
 
-; At the same time that we strobe bit 0, we initialize the ring counter
-; so we're hitting two birds with one stone here
-readjoy:
-    lda #$01
-    ; While the strobe bit is set, buttons will be continuously reloaded.
-    ; This means that reading from $4016 will only return the state of the
-    ; first button: button A.
-    sta $4016
-    sta buttons
-    lsr a        ; now A is 0
-    ; By storing 0 into $4016, the strobe bit is cleared and the reloading stops.
-    ; This allows all 8 buttons (newly reloaded) to be read from $4016.
-    sta $4016
-loop:
-    lda $4016
-    lsr a        ; bit 0 -> Carry
-    rol buttons  ; Carry -> bit 0; bit 7 -> Carry
-    bcc loop
-    rts
-
-; Draw X, O or nothing at row of register x and y
-drawCharacter:
-
-    ; Calculate Byte index für Row X. It is (X-1)
-    LDA STATE, X
-    LDX #$03
-    TAY
-DrawCharsRow:
-    TYA
-    AND #%01000000
-    BEQ NO_X
-    LDA #$28
-    STA $2007
-    CLC
-    ADC #$01
-    STA $2007
-    JMP drawCharacter_END
-NO_X:
-    TYA
-    AND #%10000000
-    BEQ NO_O
-    LDA #$2C
-    STA $2007
-    CLC
-    ADC #$01
-    STA $2007
-    JMP drawCharacter_END
-NO_O:
-    LDA #$00
-drawCharacter_END:
-    TYA
-    ASL
-    ASL
-    TAY 
-    DEX
-    BNE DrawCharsRow
-    rts
-
+    .include "readJoy.asm"
+    .include "drawCharacter.asm"
+    .include "drawCursor.asm"
+    .include "drawGrid.asm"
+    .include "handleButton.asm"
 
 
 NMI:
@@ -243,118 +155,9 @@ NMI:
     STA $4014
     
     JSR readjoy
-    LDA buttons
-    BEQ NoButtonHandled ; If no button pressed reset Sticky time
-
-    LDX STICKYINPUT
-    BEQ BUTTONHANDLER
-    DEX
-    STX STICKYINPUT
-    JMP DRAW
-    
-BUTTONHANDLER:
-    LDX #$10
-    STX STICKYINPUT
-    AND #%00000100
-    BNE MOVE_UP
-    
-    LDA buttons
-    AND #%00001000
-    BNE MOVE_DOWN 
-
-    LDA buttons
-    AND #%0000001
-    BNE MOVE_RIGHT
-
-    LDA buttons
-    AND #%0000010
-    BNE MOVE_LEFT
-    JMP DRAW
-
-MOVE_UP:
-    LDA CURSOR_Y
-    CLC
-    ADC #$18
-    STA CURSOR_Y
-    JMP ButtonHandled
-
-MOVE_DOWN:
-    LDA CURSOR_Y
-    SEC
-    SBC #$18
-    STA CURSOR_Y
-    JMP ButtonHandled
-
-MOVE_RIGHT:
-    LDA CURSOR_X
-    CLC
-    ADC #$18
-    STA CURSOR_X
-    JMP ButtonHandled
-
-MOVE_LEFT:
-    LDA CURSOR_X
-    SEC
-    SBC #$18
-    STA CURSOR_X
-    JMP ButtonHandled
-
-
-NoButtonHandled:
-    ; Reset Sticky Time.
-    LDX #$00
-    STX STICKYINPUT
-    JMP DRAW
-    
-ButtonHandled:
-    ; Increase Sticky Time.
-    LDX #$20
-    STX STICKYINPUT
-    
-
-DRAW:
-    ; move the sprite up or down by updating the OAM Y Attr
-    LDX #$00
-    LDA CURSOR_Y
-MoveSpritesY:
-    STA $0200, X ; first tile at $0200 + X
-    STA $0204, X ; second tile at $0204 + X
-    INX
-    INX
-    INX
-    INX
-    INX
-    INX
-    INX
-    INX          ; next tile at $0208, $020C ... 
-    CLC          ; next two tiles must be drawn 8 pixels below
-    ADC #$08
-    CPX #$10     ; sprite is 8x8 tiles (64 pixels) but every iteration handles two
-    BNE MoveSpritesY
-
-
-    LDX #$00
-    LDA CURSOR_X
-MoveSpritesX:
-    STA $0203, X
-    CLC          ; every second tile is 8 pixels to the right (modify CURSOR_X by 8)
-    ADC #$08
-    STA $0207, X
-    INX
-    INX
-    INX
-    INX
-    INX
-    INX
-    INX
-    INX
-    SEC
-    SBC #$08     ; make sure the original CURSOR_X is used for the first tile
-    CPX #$10
-    BNE MoveSpritesX
-
-    ;LDX #3 ; Number of Rows
-
+    JSR handleButton
+    JSR drawCursor
+ 
     LDA #$21
     STA $2006
     LDA #$6C
@@ -367,7 +170,6 @@ MoveSpritesX:
     STA $2006
     LDA #$00
     STA $2006
-
 
     RTI
 
