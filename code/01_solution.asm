@@ -1,4 +1,4 @@
-;ca65 code/01_solution.asm -o code/01_solution.o -t nes && ld65 code/01_solution.o -o code/01_solution.nes -t ne
+;ca65 code/01_solution.asm -o code/01_solution.o -t nes && ld65 code/01_solution.o -o code/01_solution.nes -t nes
 .segment "HEADER"
 .byte "NES"
 .byte $1a
@@ -11,9 +11,6 @@
 .byte $00
 .byte $00, $00, $00, $00, $00 ; filler bytes
 .segment "ZEROPAGE" ; LSB 0 - FF
-PLAYERPOSX: .byte $00 
-PLAYERPOSY: .byte $00 
-buttons: .res 1
 .segment "STARTUP"
 Reset:
     ; Disable all interrupts

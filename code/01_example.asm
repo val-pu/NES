@@ -1,4 +1,4 @@
-;ca65 code/01_example.asm -o code/01_example.o -t nes && ld65 code/01_example.o -o code/01_example.nes -t ne
+;ca65 code/01_example.asm -o code/01_example.o -t nes && ld65 code/01_example.o -o code/01_example.nes -t nes
 .segment "HEADER"
 .byte "NES"
 .byte $1a
@@ -11,9 +11,6 @@
 .byte $00
 .byte $00, $00, $00, $00, $00 ; filler bytes
 .segment "ZEROPAGE" ; LSB 0 - FF
-PLAYERPOSX: .byte $00 
-PLAYERPOSY: .byte $00 
-buttons: .res 1
 .segment "STARTUP"
 Reset:
     ; Disable all interrupts
@@ -66,6 +63,6 @@ PaletteData:
 .segment "VECTORS"
     .word NMI
     .word Reset
-    ; 
+    ; no IRQ label
 .segment "CHARS"
     .incbin "code/tilemap01.chr"
