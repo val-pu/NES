@@ -143,6 +143,7 @@ ClearNametable:
 Loop:
     JMP Loop
 
+    .include "drawMetatile.asm"
     .include "readJoy.asm"
     .include "drawCharacter.asm"
     .include "drawCursor.asm"
@@ -154,10 +155,13 @@ NMI:
     LDA #$02 ; copy sprite data from $0200 => PPU memory for display
     STA $4014
     
+
     JSR readjoy
     JSR handleButton
     JSR drawCursor
- 
+    
+
+
     LDA #$21
     STA $2006
     LDA #$6C
